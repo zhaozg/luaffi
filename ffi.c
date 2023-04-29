@@ -1009,6 +1009,87 @@ int closure_tostr(lua_State *L)
 	return 1;
 }
 
+/* Performs memcpy with lua string.
+ *
+ * Arg 1: object.
+ * Arg 2: string.
+ * Arg 3: offset (default 0), 0-based, in unit of bytes
+ * Arg 4. length (default length of Arg #2)
+ * Returns numbers of bytes copied into object
+ */
+static
+int copy(lua_State *L)
+{
+	void *obj;
+	size_t offset, len;
+	int ltype = lua_type(L, 1);
+	const char *src = luaL_checklstring(L, 2, &len);
+
+	luaL_argcheck(L, ltype == LUA_TUSERDATA || ltype == LUA_TLIGHTUSERDATA,
+		1, "expect userdata");
+	obj = lua_touserdata(L, 1);
+	offset = luaL_optinteger(L, 3, 0);
+	len = luaL_optinteger(L, 4, len);
+	luaL_argcheck(L, 0 <= offset && offset < lua_rawlen(L, 1), 3,
+		"offset out of bound");
+	luaL_argcheck(L, 0 <= len && len + offset <= lua_rawlen(L, 1), 4,
+		"length out of bound");
+
+	memcpy(obj+offset, src, len);
+	return 0;
+}
+
+/* Performs memset
+ *
+ * Arg 1: object.
+ * Arg 2. length in unit of bytes
+ * Arg 3: val(default 0),  .
+ */
+static
+int fill(lua_State *L)
+{
+	void *obj;
+	size_t len;
+	int ltype = lua_type(L, 1);
+	int val;
+
+	luaL_argcheck(L, ltype == LUA_TUSERDATA || ltype == LUA_TLIGHTUSERDATA,
+		1, "expect userdata");
+	obj = lua_touserdata(L, 1);
+	len = luaL_checkinteger(L, 2);
+	val = luaL_optinteger(L, 3, 0);
+	luaL_argcheck(L, 0 <= len && len <= lua_rawlen(L, 1), 2,
+		"length out of bound");
+	luaL_argcheck(L, 0 <= val && val < 256, 3,
+		"offset out of range [0-255]");
+
+  memset(obj, val, len);
+	return 0;
+}
+
+/* convert object to lua string.
+ *
+ * Arg 1: object.
+ * Arg 2. length (default length of Arg #1)
+ * Returns lua string
+ */
+static
+int string(lua_State *L)
+{
+	void *obj;
+	size_t len;
+	int ltype = lua_type(L, 1);
+
+	luaL_argcheck(L, ltype == LUA_TUSERDATA || ltype == LUA_TLIGHTUSERDATA,
+		1, "expect userdata");
+	obj = lua_touserdata(L, 1);
+	len = lua_rawlen(L, 1);
+	len = luaL_optinteger(L, 2, len);
+
+	lua_pushlstring(L, (const char*)obj, len);
+	return 1;
+}
+
 
 /** Stock types from libFFI.
  */
@@ -1102,6 +1183,9 @@ int luaopen_ffi(lua_State *L)
 		{"ref", ref_offset},
 		{"closure", makeclosure},
 		{"tostring", tostring},
+		{"copy", copy},
+		{"fill", fill},
+		{"string", string},
 		{NULL, NULL},
 	};
 	static const luaL_Reg cif_reg[] = {
