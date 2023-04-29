@@ -24,23 +24,84 @@ local floattypes = {
   --ld = "longdouble"
 }
 
+local enumtypes = {
+  e8 = "sint8",
+  e16 = "sint16",
+  e32 = "sint32",
+}
+
+local printtypes = {
+  i8 = "sint8",
+  u8 = "uint8",
+  i16 = "sint16",
+  u16 = "uint16",
+  i32 = "sint32",
+  u32 = "uint32",
+  i64 = "sint64",
+  u64 = "uint64",
+  d = "double",
+  f = "float",
+  e8 = 'sint8',
+  e16 = 'sint8',
+  e32 = 'sint32',
+
+  p = "pointer",
+  s = "pointer",
+}
+
+local math = require('math')
+local printvalues = {
+  i8 = 0xff,
+  u8 = 0xff,
+  i16 = 0xffff,
+  u16 = 0xffff,
+  i32 = 0xffffffff,
+  u32 = 0xffffffff,
+  i64 = 0xffffffffffffffff,
+  u64 = 0xffffffffffffffff,
+  d = math.pi,
+  f = math.pi,
+  e8 = 0xff,
+  e16 = 0xffff,
+  e32 = 0xffffffff,
+
+  --p = ffi.NULL,
+  s = "pointer",
+}
+
 local real_funcs = { "add" }
 
 local lib = {}
 
 do
+  local cif
   for k, v in pairs(inttypes) do
-    local cif = ffi.cif {ret = ffi[v]; ffi[v], ffi[v]}
+    cif = ffi.cif {ret = ffi[v]; ffi[v], ffi[v]}
     for _, f in ipairs(real_funcs) do
       lib[string.format('%s_%s', f, k)] = cif
     end
   end
   for k, v in pairs(floattypes) do
-    local cif = ffi.cif {ret = ffi[v]; ffi[v], ffi[v]}
+    cif = ffi.cif {ret = ffi[v]; ffi[v], ffi[v]}
     for _, f in ipairs(real_funcs) do
       lib[string.format('%s_%s', f, k)] = cif
     end
   end
+
+  cif = ffi.cif {ret = ffi.sint, ffi.sint}
+  lib.test_pow = cif
+
+  for k, v in pairs(enumtypes) do
+    cif = ffi.cif {ret = ffi[v]; ffi[v]}
+    lib[string.format('inc_%s', k)] = cif
+  end
+
+  -- EXPORT int NAME(char* buf, TYPE val); \
+  for k, v in pairs(printtypes) do
+    cif = ffi.cif {ret = ffi.sint; ffi.pointer, ffi[v]}
+    lib[string.format('print_%s', k)] = cif
+  end
+
 end
 
 local fail, count = 0, 0
@@ -75,6 +136,28 @@ for k, _ in pairs(floattypes) do
     local func = lib[fun]
     check(2, func(1, 1), fun)
   end
+end
+
+check(4, lib.test_pow(2), "test_pow")
+
+local enumvalues = {
+  e8 = 0xff,
+  e16 = 0xffff,
+  e32 = 0xffffffff
+}
+
+for k, _ in pairs(enumtypes) do
+  local func = string.format("inc_%s", k)
+  check(0, lib[func](enumvalues[k]), func)
+end
+
+for k, v in pairs(printtypes) do
+  local func = string.format("print_%s", k)
+  local buf = ffi.alloc(ffi.char, 128)
+  local l = lib[func](buf, printvalues[k])
+  assert(l > 0 and l < 128)
+  buf = ffi.tostring(buf)
+  check(l, #buf, buf)
 end
 
 print(string.format('Test PASS %%%.2d fail/total %d/%d', fail/count, fail, count))

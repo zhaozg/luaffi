@@ -270,6 +270,30 @@ int alloc(lua_State *L)
 	return 1;
 }
 
+/* Returns the string of allocated objects or a type.
+ *
+ * Arg 1: pointer char.
+ * Arg 2: N (default: 1). length of an array.
+ * Returns a string that holds N char. */
+static
+int tostring(lua_State *L)
+{
+	void *obj;
+	int len;
+
+	obj = luaL_checkudata(L, 1, "ffi_obj");
+	len = lua_rawlen(L, 1);
+	if (lua_isnoneornil(L, 2))
+	{
+		int sl = strlen((const char*)obj);
+		if (sl < len)
+			len = sl;
+	}
+	len = luaL_optinteger(L, 2, len);
+	lua_pushlstring(L, obj, len);
+	return 1;
+}
+
 /* Returns the size of allocated objects or a type.
  */
 static
@@ -1077,6 +1101,7 @@ int luaopen_ffi(lua_State *L)
 		{"deref", deref},
 		{"ref", ref_offset},
 		{"closure", makeclosure},
+		{"tostring", tostring},
 		{NULL, NULL},
 	};
 	static const luaL_Reg cif_reg[] = {
