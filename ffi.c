@@ -1221,5 +1221,24 @@ int luaopen_ffi(lua_State *L)
 	luaL_newlib(L, lib_reg);
 	define_types(L, lua_gettop(L));
 
+/* Set target OS properties. */
+#if defined(_WIN32)
+#define OS_NAME	"Windows"
+#elif defined(__linux__)
+#define OS_NAME	"Linux"
+#elif defined(__APPLE__) && defined(__MACH__)
+#define OS_NAME	"OSX"
+#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) \
+	defined(__bsdi__) || defined(__DragonFly__)
+#define OS_NAME	"BSD"
+#elif defined(_POSIX_VERSION)
+#define OS_NAME	"POSIX"
+#else
+#define OS_NAME	"Other"
+#endif
+	lua_pushliteral(L, "os");
+	lua_pushliteral(L, OS_NAME);
+	lua_rawset(L, -3);
+
 	return 1;
 }
