@@ -5,7 +5,7 @@
 #include <lauxlib.h>
 
 #include <assert.h>
-#include <inttypes.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -23,11 +23,16 @@
 	macro(FFI_TYPE_SINT16, int16_t, sint16) \
 	macro(FFI_TYPE_SINT32, int32_t, sint32) \
 	macro(FFI_TYPE_SINT64, int64_t, sint64)
-
+#ifdef HAVE_LONG_DOUBLE
 #define FLOAT_TYPE_LIST_(macro) \
 	macro(FFI_TYPE_FLOAT, float, float) \
 	macro(FFI_TYPE_DOUBLE, double, double) \
 	macro(FFI_TYPE_LONGDOUBLE, long double, longdouble)
+#else
+#define FLOAT_TYPE_LIST_(macro) \
+	macro(FFI_TYPE_FLOAT, float, float) \
+	macro(FFI_TYPE_DOUBLE, double, double)
+#endif
 
 /* Callback from FFI */
 struct closure {
@@ -1100,7 +1105,7 @@ void define_type(lua_State *L, int table, const char *name, ffi_type *type)
 }
 
 static
-void define_int_alias(lua_State *L, int table, const char *name, size_t max)
+void define_int_alias(lua_State *L, int table, const char *name, uint64_t max)
 {
 	const char *actual_type = NULL;
 
@@ -1138,7 +1143,7 @@ void define_types(lua_State *L, int table)
 #endif
 #undef DEFINE
 	};
-	static const struct { const char *name; size_t max; } aliases[] = {
+	static const struct { const char *name; uint64_t max; } aliases[] = {
 		{"uchar", UCHAR_MAX},
 		{"schar", SCHAR_MAX},
 		{"char", CHAR_MAX},
