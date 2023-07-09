@@ -12,6 +12,8 @@
 #if defined(_MSC_VER)
 #include <malloc.h>
 #define alloca _alloca
+#else
+#include <alloca.h>
 #endif
 
 #define INT_TYPE_LIST_(macro) \
