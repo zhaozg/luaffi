@@ -14,10 +14,6 @@
 #define alloca _alloca
 #endif
 
-#if LUA_VERSION_NUM != 503
-#include "deps/compat/c-api/compat-5.3.h"
-#endif
-
 #define INT_TYPE_LIST_(macro) \
 	macro(FFI_TYPE_UINT8, uint8_t, uint8) \
 	macro(FFI_TYPE_UINT16, uint16_t, uint16) \
